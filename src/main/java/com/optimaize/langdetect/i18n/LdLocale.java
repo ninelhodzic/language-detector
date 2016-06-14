@@ -4,7 +4,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
+import java.util.Iterator;
 
 /**
  * A language-detector implementation of a Locale, similar to the java.util.Locale.
@@ -74,8 +74,25 @@ public final class LdLocale {
         Optional<String> script = null;
         Optional<String> region = null;
 
-        List<String> strings = Splitter.on('-').splitToList(string);
-        for (int i=0; i<strings.size(); i++) {
+        Iterable<String> strings = Splitter.on('-').split(string);
+        Iterator<String> inter = strings.iterator();
+        int i = 0;
+        while(inter.hasNext()){
+            String chunk = inter.next();
+            if (i==0) {
+                language = assignLang(chunk);
+            } else {
+                if (script == null && region == null && looksLikeScriptCode(chunk)) {
+                    script = Optional.of(chunk);
+                } else if (region==null && (looksLikeGeoCode3166_1(chunk) || looksLikeGeoCodeNumeric(chunk))) {
+                    region = Optional.of(chunk);
+                } else {
+                    throw new IllegalArgumentException("Unknown part: >>>"+chunk+"<<<!");
+                }
+            }
+            ++i;
+        }
+        /*for (int i=0; i<strings.size(); i++) {
             String chunk = strings.get(i);
             if (i==0) {
                 language = assignLang(chunk);
@@ -88,7 +105,7 @@ public final class LdLocale {
                     throw new IllegalArgumentException("Unknown part: >>>"+chunk+"<<<!");
                 }
             }
-        }
+        }*/
         assert language != null;
         if (script==null) script = Optional.absent();
         if (region==null) region = Optional.absent();
